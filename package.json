@@ -1,0 +1,12 @@
+{
+  "name": "sopaan-class10",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Sopaan practice sheets for CBSE Class 10 Mathematics",
+  "scripts": {
+    "qa": "node tools/qa.js dist/levels/ch05.html"
+  },
+  "devDependencies": {
+    "playwright": "1.47.2"
+  }
+}

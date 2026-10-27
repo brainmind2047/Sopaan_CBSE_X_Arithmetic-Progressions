@@ -1,0 +1,50 @@
+from lvlib import *
+# Chapter test · Arithmetic Progressions · 24 marks · 45 minutes · every blank = 1 mark
+TEST = [
+ # ---- Section A · 1 mark each ----
+ MCQ("Test", "What is the 15th term of the AP 7, 11, 15, 19, …?", ["59", "63", "67", "60"], 1,
+     "a = 7 and d = 11 − 7 = 4.\na₁₅ = a + 14d = 7 + 14 × 4 = 63.", lo="l1"),
+ MCQ("Test", "If 3y − 1, 3y + 5 and 5y + 1 are three consecutive terms of an AP, what is y?", ["5", "3", "−3", "2"], 0,
+     "For three terms in AP, twice the middle term = sum of the other two.\n2(3y + 5) = (3y − 1) + (5y + 1)\n6y + 10 = 8y, so 2y = 10 and y = 5.\nCheck: 14, 20, 26 has d = 6.", lo="l2"),
+ AR("Test", "The sum of the first n terms of an AP is Sₙ = 3n² + 5n. Its common difference is 6.",
+    "The nth term of an AP is aₙ = Sₙ − Sₙ₋₁.", 0,
+    "aₙ = Sₙ − Sₙ₋₁ = (3n² + 5n) − [3(n − 1)² + 5(n − 1)] = 6n + 2.\nSo a₁ = 8, a₂ = 14 and d = 6: the assertion is true.\nThe reason is true and is exactly how the assertion is proved, so option (a).", lo="l3"),
+ # ---- Section B · 2 marks each ----
+ B("Test", "The AP 3, 8, 13, …, 253 is given. Find its 12th term from the end.",
+   [S("Read from the end: first term 253, common difference = __B1__", {"B1": "-5"}),
+    S("12th term from the end = 253 + 11 × (−5) = __B2__", {"B2": "198"})],
+   "Reversing an AP gives another AP with first term = last term and d changed in sign.\nHere a = 253 and d = −5.\n12th term from the end = 253 + 11(−5) = 253 − 55 = 198.", marks=2, lo="l1"),
+ B("Test", "Which term of the AP 21, 18, 15, … is −81?",
+   [S("21 + (n − 1)(__B1__) = −81", {"B1": "-3"}),
+    S("n − 1 = 34, so n = __B2__", {"B2": "35"})],
+   "a = 21 and d = 18 − 21 = −3.\n21 + (n − 1)(−3) = −81 ⇒ (n − 1)(−3) = −102 ⇒ n − 1 = 34.\nSo n = 35: −81 is the 35th term.", marks=2, lo="l2"),
+ B("Test", "Find the sum of the first 15 multiples of 8.",
+   [S("8, 16, 24, … : the 15th multiple a₁₅ = __B1__", {"B1": "120"}),
+    S("S₁₅ = [[15||2]](8 + 120) = __B2__", {"B2": "960"})],
+   "The multiples 8, 16, 24, … form an AP with a = 8 and d = 8.\na₁₅ = 8 + 14 × 8 = 120.\nS₁₅ = [[15||2]](a + l) = [[15||2]] × 128 = 960.", marks=2, lo="l3"),
+ # ---- Section C · 3 marks each ----
+ B("Test", "How many terms of the AP 5, 9, 13, … must be taken so that their sum is 275?",
+   [S("[[n||2]][10 + (n − 1)4] = 275 simplifies to n(2n + 3) = __B1__", {"B1": "275"}),
+    S("2n² + 3n − 275 = 0 has roots n = 11 and n = __B2__", {"B2": "-12.5"}, accept=["-25/2"]),
+    S("A number of terms must be a natural number, so n = __B3__", {"B3": "11"})],
+   "a = 5, d = 4. Sₙ = [[n||2]][2 × 5 + (n − 1)4] = [[n||2]](4n + 6) = n(2n + 3).\nn(2n + 3) = 275 ⇒ 2n² + 3n − 275 = 0 ⇒ (n − 11)(2n + 25) = 0.\nn = 11 or n = −[[25||2]]; reject −12.5 because n must be a natural number.\nSo 11 terms are needed. Check: S₁₁ = [[11||2]](5 + 45) = 275.", marks=3, lo="l2"),
+ B("Test", "The sum of the first n terms of an AP is Sₙ = 4n − n². Find the first term, the second term and the 10th term.",
+   [S("a₁ = S₁ = __B1__", {"B1": "3"}),
+    S("S₂ = 4, so a₂ = S₂ − S₁ = __B1__", {"B1": "1"}),
+    S("d = −2, so a₁₀ = __B1__", {"B1": "-15"})],
+   "a₁ = S₁ = 4(1) − 1² = 3.\nS₂ = 8 − 4 = 4, so a₂ = S₂ − S₁ = 4 − 3 = 1.\nd = a₂ − a₁ = −2.\na₁₀ = 3 + 9(−2) = −15. (In general aₙ = Sₙ − Sₙ₋₁ = 5 − 2n.)", marks=3, lo="l3"),
+ # ---- Section D · case study, 4 marks ----
+ CASE("Test", "Seats in a school auditorium",
+      "A school is building an auditorium. The first row has 20 seats and each row has 4 more seats than the row in front of it. There are 25 rows in all.",
+      [S("How many seats are in the 10th row? __B1__", {"B1": "56"}, part="(i)"),
+       S("Which row has 92 seats? Row number __B1__", {"B1": "19"}, part="(ii)"),
+       S("Seats in the last (25th) row = __B1__, so the total number of seats = __B2__", {"B1": "116", "B2": "1700"}, part="(iii)")],
+      "The rows form an AP with a = 20 and d = 4.\n(i) a₁₀ = 20 + 9 × 4 = 56.\n(ii) 20 + (n − 1)4 = 92 ⇒ n − 1 = 18 ⇒ n = 19.\n(iii) a₂₅ = 20 + 24 × 4 = 116.\nS₂₅ = [[25||2]](20 + 116) = 25 × 68 = 1700 seats.", lo="l4"),
+ # ---- Section E · 5 marks ----
+ B("Test", "The sum of the 3rd and 7th terms of an AP is 26, and the sum of its 5th and 11th terms is 44. Find the AP and the sum of its first 20 terms.",
+   [S("(a + 2d) + (a + 6d) = 26 gives a + 4d = __B1__", {"B1": "13"}),
+    S("(a + 4d) + (a + 10d) = 44 gives a + 7d = __B1__", {"B1": "22"}),
+    S("Subtracting: d = __B1__ and a = __B2__", {"B1": "3", "B2": "1"}),
+    S("S₂₀ = [[20||2]][2 × 1 + 19 × 3] = __B1__", {"B1": "590"})],
+   "3rd + 7th: 2a + 8d = 26 ⇒ a + 4d = 13 … (1)\n5th + 11th: 2a + 14d = 44 ⇒ a + 7d = 22 … (2)\n(2) − (1): 3d = 9 ⇒ d = 3; then a = 13 − 12 = 1.\nThe AP is 1, 4, 7, 10, …\nS₂₀ = 10[2 + 57] = 10 × 59 = 590.", marks=5, lo="l5"),
+]
