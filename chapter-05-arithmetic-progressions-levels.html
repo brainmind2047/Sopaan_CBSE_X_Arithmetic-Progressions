@@ -766,11 +766,14 @@
   .bs-b.on{background:var(--lo,#1E3A8A)!important;color:#fff!important;}
   .tab-btn.lv-locked{opacity:.55;}
   .tab-btn.lv-locked::after{content:' 🔒';}
+  .fig .tscroll{max-width:100%;overflow-x:auto;display:block;} .fig table{border-collapse:collapse;font-size:15px;margin:4px auto;} .fig table th,.fig table td{border:1px solid var(--rule,#CBD5E1);padding:6px 10px;text-align:center;white-space:nowrap;} .fig table th{background:var(--paper-2,#F1F5F9);font-weight:700;}
   .marks-chip{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#0F172A;color:#fff;font:700 12.5px 'Source Sans 3',sans-serif;vertical-align:middle;}
   .lv-lock-card{text-align:center;padding:28px 18px;}
   .lv-lock-card .big{font-size:44px;}
   .tst-marks{font-weight:800;}
   .subpart-label{text-transform:none!important;}
+  .next-ch-wrap{display:flex;justify-content:center;margin:16px 0;}
+  a.next-ch{text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:#1E3A8A!important;color:#fff!important;}
   .markscheme{margin:14px 0 10px;border:2px solid #0F172A;border-radius:12px;overflow:hidden;background:var(--card);}
   .markscheme .sm-h{background:#0F172A;color:#fff;font:700 14px 'Source Sans 3',sans-serif;padding:7px 12px;}
   .markscheme table{width:100%;border-collapse:collapse;font-size:15.5px;}
@@ -1263,7 +1266,7 @@ function renderChoiceBody(slide, item, idx){
 
 function renderBlankBody(slide, item, idx){
   var h='<div class="qhead"><div class="qnum">'+(idx+1)+'</div><div class="qtext">';
-  if(slide.kind==='case'){ h += '<b>'+esc(slide.title)+'.</b> '+esc(slide.body); }
+  if(slide.kind==='case'){ h += '<b>'+esc(slide.title)+'.</b> '+fr(esc(slide.body)); }
   else { var pp=fr(esc(slide.p)).split('\n'); h += pp[0]+pp.slice(1).map(function(x){return '<span class="datline">'+x+'</span>';}).join(''); }
   h += (slide.tag?'<span class="qtag">'+esc(slide.tag)+'</span>':'')+'</div>';
   if(slide.marks) h += '<div class="marks-pill">'+slide.marks+'</div>';
@@ -3103,6 +3106,19 @@ function cbInject(){ var s=SECMAP[activeTab]; if(!s||s.kind!=='practice') return
 (function(){ var _rf=renderFinished; renderFinished=function(){ var r=_rf.apply(this,arguments); try{ cbInject(); }catch(e){ console.log('cb',e); } return r; }; })();
 (function(){ var _rq=renderQuizResults; renderQuizResults=function(){ var r=_rq.apply(this,arguments); try{ if(!isTestTab(activeTab)) cbInject(); }catch(e){ console.log('cb',e); } return r; }; })();
 (function(){ var _rr=renderReport; renderReport=function(){ var r=_rr.apply(this,arguments); try{ document.querySelectorAll('#wrap .lor-card').forEach(function(c,k){ var lo=LOS[k]; if(!lo) return; var d=document.createElement('div'); d.innerHTML=cbCard(lo.id); c.appendChild(d.firstChild); }); cbWire(document.getElementById('wrap')); }catch(e){ console.log('cbr',e); } return r; }; })();
+
+/* ================= next sheet respects the level order; next chapter after the test ================= */
+v4NextTab=function(){ var cur=secOf(activeTab);
+  if(cur&&cur.kind==='practice'){ var ps=loPractices(cur.lo);
+    for(var k=0;k<ps.length;k++){ var st=state&&state.tabs[ps[k].id]; if(ps[k].id===activeTab) continue;
+      var left=st?st.items.some(function(it){ return it.status==='unanswered'||it.status==='skipped'; }):true; if(left) return TAB_DEFS.find(function(t){ return t.id===ps[k].id; }); } }
+  var i=TAB_DEFS.findIndex(function(t){return t.id===activeTab;});
+  for(var j=i+1;j<TAB_DEFS.length;j++){ var id=TAB_DEFS[j].id; if(id!=='theory'&&SLIDES[id]&&SLIDES[id].length&&!tabLockedBy(id)) return TAB_DEFS[j]; }
+  return null; };
+var NEXT_CH={"url": "https://brainmind2047.github.io/Sopaan_CBSE_X_Triangles/", "title": "Ch 6 Triangles"};
+function nextChBtn(){ if(!NEXT_CH||!NEXT_CH.url) return null; var a=document.createElement('a'); a.className='btn btn-primary next-ch'; a.href=NEXT_CH.url; a.target='_blank'; a.rel='noopener'; a.textContent='Next chapter: '+NEXT_CH.title+' →'; return a; }
+(function(){ var _rq=renderQuizResults; renderQuizResults=function(){ var r=_rq.apply(this,arguments); try{ if(isTestTab(activeTab)){ var card=document.querySelector('#wrap .done-card'); if(card&&!card.querySelector('.next-ch')){ var b=nextChBtn(); if(b){ var w=document.createElement('div'); w.className='next-ch-wrap'; w.appendChild(b); card.insertBefore(w, card.firstChild.nextSibling); } } } }catch(e){ console.log('nc',e); } return r; }; })();
+(function(){ var _rr=renderReport; renderReport=function(){ var r=_rr.apply(this,arguments); try{ var w=document.getElementById('wrap'); var b=nextChBtn(); if(w&&b&&!w.querySelector('.next-ch')){ var d=document.createElement('div'); d.className='next-ch-wrap'; d.appendChild(b); w.appendChild(d); } }catch(e){} return r; }; })();
 window.__sopaanQA={SECTIONS:SECTIONS,SLIDES:SLIDES,lvDoneCount:lvDoneCount,answerMatches:answerMatches,go:function(id){ activeTab=id; buildTabbar(); renderSlide(); }};
 
 renderLogin();

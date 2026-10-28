@@ -11,6 +11,11 @@ src = src[src.index('<!DOCTYPE html>'):]
 if src.rstrip().endswith('</body></html>'): src = src[:src.rindex('</body></html>')]
 
 ch = C.CHAPTER; n = ch['num']; title = ch['title']
+CHAIN_F = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chain.json')
+CHAIN = json.load(open(CHAIN_F)) if os.path.exists(CHAIN_F) else {}
+NEXT = None
+for k in sorted(int(x) for x in CHAIN if CHAIN[x].get('url')):
+    if k > n: NEXT = {"url": CHAIN[str(k)]['url'], "title": 'Ch %d %s' % (k, CHAIN[str(k)]['title'])}; break
 
 # ---------- solid standard colours ----------
 LEVEL_COL = ["#16A34A", "#2563EB", "#7C3AED", "#EA580C", "#DC2626"]   # green, blue, violet, orange, red
@@ -52,6 +57,19 @@ for i, lv in enumerate(C.LEVELS):
                          "kind": "practice", "book": k, "lo": lv['id'], "slides": sl})
 TEST = C.TEST
 for q in TEST: q['book'] = 'test'
+# The engine escapes HTML in question text: move data tables into 'fig' (rendered as HTML).
+_TBL = re.compile(r'(?:<div class="tscroll">\s*)?<table.*?</table>(?:\s*</div>)?', re.S)
+def _lift_tables(q):
+    for k in ('p', 'text', 'body'):
+        v = q.get(k)
+        if isinstance(v, str) and '<table' in v:
+            tabs = _TBL.findall(v)
+            if tabs:
+                q[k] = _TBL.sub(' ', v).strip()
+                q['fig'] = (q.get('fig') or '') + ''.join(t if t.startswith('<div') else '<div class="tscroll">%s</div>' % t for t in tabs)
+for _s in sections:
+    for _q in _s['slides']: _lift_tables(_q)
+for _q in TEST: _lift_tables(_q)
 def qmarks(q):
     if q['kind'] in ('mcq', 'ar'): return 1
     return sum(len(s['a']) for s in q['flat'])
@@ -96,6 +114,9 @@ def sub1(pat, new, flags=0):
     src = src2
 
 src = re.sub(r'LO_COL=\[[^\]]*\]', 'LO_COL=' + json.dumps(LEVEL_COL + LEVEL_COL), src, count=1)
+# case-study passages: render fractions/sup/sub like other question text
+assert src.count('esc(slide.body)') == 1
+src = src.replace('esc(slide.body)', 'fr(esc(slide.body))')
 sub1(r"var SHEET_KEY='[^']*';", "var SHEET_KEY='sopaan-cbse10-lv-ch%02d';" % n)
 sub1(r'<title>[^<]*</title>', '<title>Sopaan · Class 10 · Ch %d %s · Levels</title>' % (n, title))
 sub1(r'<div class="chapter-eyebrow">[^<]*</div>', '<div class="chapter-eyebrow">CBSE Class 10 Mathematics · Level-wise learning sheets · Chapter %d</div>' % n)
@@ -156,11 +177,14 @@ rep("</style>\n</head>", """  .src-badge.m1,.src-badge.m2,.src-badge.m3,.src-bad
   .bs-b.on{background:var(--lo,#1E3A8A)!important;color:#fff!important;}
   .tab-btn.lv-locked{opacity:.55;}
   .tab-btn.lv-locked::after{content:' 🔒';}
+  .fig .tscroll{max-width:100%;overflow-x:auto;display:block;} .fig table{border-collapse:collapse;font-size:15px;margin:4px auto;} .fig table th,.fig table td{border:1px solid var(--rule,#CBD5E1);padding:6px 10px;text-align:center;white-space:nowrap;} .fig table th{background:var(--paper-2,#F1F5F9);font-weight:700;}
   .marks-chip{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#0F172A;color:#fff;font:700 12.5px 'Source Sans 3',sans-serif;vertical-align:middle;}
   .lv-lock-card{text-align:center;padding:28px 18px;}
   .lv-lock-card .big{font-size:44px;}
   .tst-marks{font-weight:800;}
   .subpart-label{text-transform:none!important;}
+  .next-ch-wrap{display:flex;justify-content:center;margin:16px 0;}
+  a.next-ch{text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:#1E3A8A!important;color:#fff!important;}
   .markscheme{margin:14px 0 10px;border:2px solid #0F172A;border-radius:12px;overflow:hidden;background:var(--card);}
   .markscheme .sm-h{background:#0F172A;color:#fff;font:700 14px 'Source Sans 3',sans-serif;padding:7px 12px;}
   .markscheme table{width:100%;border-collapse:collapse;font-size:15.5px;}
@@ -245,8 +269,21 @@ function cbInject(){ var s=SECMAP[activeTab]; if(!s||s.kind!=='practice') return
 (function(){ var _rf=renderFinished; renderFinished=function(){ var r=_rf.apply(this,arguments); try{ cbInject(); }catch(e){ console.log('cb',e); } return r; }; })();
 (function(){ var _rq=renderQuizResults; renderQuizResults=function(){ var r=_rq.apply(this,arguments); try{ if(!isTestTab(activeTab)) cbInject(); }catch(e){ console.log('cb',e); } return r; }; })();
 (function(){ var _rr=renderReport; renderReport=function(){ var r=_rr.apply(this,arguments); try{ document.querySelectorAll('#wrap .lor-card').forEach(function(c,k){ var lo=LOS[k]; if(!lo) return; var d=document.createElement('div'); d.innerHTML=cbCard(lo.id); c.appendChild(d.firstChild); }); cbWire(document.getElementById('wrap')); }catch(e){ console.log('cbr',e); } return r; }; })();
+
+/* ================= next sheet respects the level order; next chapter after the test ================= */
+v4NextTab=function(){ var cur=secOf(activeTab);
+  if(cur&&cur.kind==='practice'){ var ps=loPractices(cur.lo);
+    for(var k=0;k<ps.length;k++){ var st=state&&state.tabs[ps[k].id]; if(ps[k].id===activeTab) continue;
+      var left=st?st.items.some(function(it){ return it.status==='unanswered'||it.status==='skipped'; }):true; if(left) return TAB_DEFS.find(function(t){ return t.id===ps[k].id; }); } }
+  var i=TAB_DEFS.findIndex(function(t){return t.id===activeTab;});
+  for(var j=i+1;j<TAB_DEFS.length;j++){ var id=TAB_DEFS[j].id; if(id!=='theory'&&SLIDES[id]&&SLIDES[id].length&&!tabLockedBy(id)) return TAB_DEFS[j]; }
+  return null; };
+var NEXT_CH=__NEXTCH__;
+function nextChBtn(){ if(!NEXT_CH||!NEXT_CH.url) return null; var a=document.createElement('a'); a.className='btn btn-primary next-ch'; a.href=NEXT_CH.url; a.target='_blank'; a.rel='noopener'; a.textContent='Next chapter: '+NEXT_CH.title+' →'; return a; }
+(function(){ var _rq=renderQuizResults; renderQuizResults=function(){ var r=_rq.apply(this,arguments); try{ if(isTestTab(activeTab)){ var card=document.querySelector('#wrap .done-card'); if(card&&!card.querySelector('.next-ch')){ var b=nextChBtn(); if(b){ var w=document.createElement('div'); w.className='next-ch-wrap'; w.appendChild(b); card.insertBefore(w, card.firstChild.nextSibling); } } } }catch(e){ console.log('nc',e); } return r; }; })();
+(function(){ var _rr=renderReport; renderReport=function(){ var r=_rr.apply(this,arguments); try{ var w=document.getElementById('wrap'); var b=nextChBtn(); if(w&&b&&!w.querySelector('.next-ch')){ var d=document.createElement('div'); d.className='next-ch-wrap'; d.appendChild(b); w.appendChild(d); } }catch(e){} return r; }; })();
 window.__sopaanQA={SECTIONS:SECTIONS,SLIDES:SLIDES,lvDoneCount:lvDoneCount,answerMatches:answerMatches,go:function(id){ activeTab=id; buildTabbar(); renderSlide(); }};
-""" % C.UNLOCK_PCT
+""".replace("__NEXTCH__", json.dumps(NEXT)) % C.UNLOCK_PCT
 rep("\nrenderLogin();\n})();", GATE + "\nrenderLogin();\n})();")
 
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join('dist', 'levels', os.path.basename(chdir.rstrip('/')) + '.html')

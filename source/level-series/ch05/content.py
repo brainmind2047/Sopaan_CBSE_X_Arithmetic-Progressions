@@ -1,5 +1,5 @@
 import sys, os, importlib.util
-HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, os.path.join(HERE, '..', '..', 'tools')); sys.path.insert(0, HERE)
+HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, os.path.dirname(HERE)); sys.path.insert(0, HERE)
 from lvlib import *
 
 CHAPTER = {"num": 5, "part": "CBSE Class 10", "title": "Arithmetic Progressions"}
